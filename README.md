@@ -1,6 +1,8 @@
 # agent-memgate
 
-A reproducible demonstration that a single untrusted web page can plant a persistent instruction in an agent's memory that makes it leak email in a later, clean session, plus **agent-memgate** ("memgate"), a small library that stops it with provenance-labelled memory and flow policy at the tool boundary.
+A reproducible test of cross-session memory poisoning, where one untrusted web page or email tries to plant a standing instruction in an AI assistant's memory so that a later, clean request leaks email, plus **agent-memgate** ("memgate"), a small library that blocks it at the tool boundary with provenance-labelled memory and a flow policy.
+
+**Result so far:** Claude Sonnet 5.5 and GPT-6.1 Sol resisted every variant (0 of 80 runs stored the instruction). The leak in the demo comes from a deliberately gullible scripted model, which shows what happens when a model *doesn't* notice, and what the guard does about it. See [WRITEUP.md](WRITEUP.md).
 
 ## 60-second demo
 
