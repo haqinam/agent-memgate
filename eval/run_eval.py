@@ -92,8 +92,9 @@ def main(argv: list[str] | None = None) -> int:
                     provider = make_provider(pname, sc, models.get(pname))
                     t0 = time.time()
                     res = run_scenario(sc, provider, defense)
-                    if any("authentic" in e.lower() or "api key" in e.lower() for e in res["errors"]):
-                        raise SystemExit(f"{pname}: authentication failed, stopping. {res['errors'][0]}")
+                    fatal = ("authentic", "api key", "insufficient_quota", "credit", "billing", "quota")
+                    if any(f in e.lower() for e in res["errors"] for f in fatal):
+                        raise SystemExit(f"{pname}: account/auth problem, stopping (nothing recorded). {res['errors'][0]}")
                     res["elapsed_s"] = round(time.time() - t0, 2)
                     res["trial"] = t
                     key = (pname, provider.model, sc["name"], defense, res["expect_bypass"])
