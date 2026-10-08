@@ -112,6 +112,16 @@ def main(argv: list[str] | None = None) -> int:
         {"provider": k[0], "model": k[1], "scenario": k[2], "defense": k[3], "expect_bypass": k[4], **v}
         for k, v in agg.items()
     ]
+    # Merge with earlier runs: rows for (provider, model, scenario, defense) re-run now replace old ones.
+    prev_path = out / "results.json"
+    if prev_path.exists():
+        prev = json.loads(prev_path.read_text())
+        key = lambda r: (r["provider"], r["model"], r["scenario"], r["defense"])
+        fresh = {key(r) for r in rows}
+        rows = [r for r in prev.get("rows", []) if key(r) not in fresh] + rows
+        providers = sorted(set(prev.get("meta", {}).get("providers", [])) | set(providers), key=NAMES.index)
+    order = {p: i for i, p in enumerate(NAMES)}
+    rows.sort(key=lambda r: (order.get(r["provider"], 99), r["model"], r["scenario"], r["defense"]))
     meta = {"generated": time.strftime("%Y-%m-%d %H:%M:%S %Z"), "providers": providers}
     (out / "results.json").write_text(json.dumps({"meta": meta, "rows": rows}, indent=2))
     (out / "results.md").write_text(render_md(rows, meta))
