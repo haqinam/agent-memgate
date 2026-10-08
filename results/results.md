@@ -1,6 +1,6 @@
 # Results
 
-Generated 2026-10-07 23:08:42 PDT by `eval/run_eval.py`. Providers run: mock, anthropic.
+Generated 2026-10-07 23:22:42 PDT by `eval/run_eval.py`. Providers run: mock, anthropic.
 
 `mock` rows are a scripted model: they verify the plumbing (attack path and enforcement), not that any real model is vulnerable. Real-provider rows are the empirical result.
 

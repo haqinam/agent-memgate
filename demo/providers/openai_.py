@@ -1,7 +1,8 @@
-"""OpenAI Chat Completions provider. Needs OPENAI_API_KEY.
+"""OpenAI providers.
 
-Also works with any OpenAI-compatible endpoint via OPENAI_BASE_URL
-(e.g. Ollama: OPENAI_BASE_URL=http://localhost:11434/v1 OPENAI_API_KEY=ollama).
+`OpenAIProvider` uses the Responses API (OPENAI_API_KEY). `OpenWeightsProvider`
+uses Chat Completions against any OpenAI-compatible server (OPENWEIGHTS_BASE_URL),
+since local servers such as Ollama, vLLM and llama.cpp implement that API.
 """
 
 from __future__ import annotations
@@ -10,10 +11,12 @@ import json
 
 from .base import AssistantMessage, ToolCall, split_system
 
-DEFAULT_MODEL = "gpt-5.5"  # override with --model; verify against OpenAI's model list
+DEFAULT_MODEL = "gpt-5.5"  # override with --model; list yours with eval/list_models.py openai
 
 
 class OpenAIProvider:
+    """OpenAI via the Responses API (needed for tool use with reasoning on current models)."""
+
     name = "openai"
 
     def __init__(self, model: str | None = None) -> None:
@@ -21,6 +24,59 @@ class OpenAIProvider:
 
         self.client = openai.OpenAI()  # reads OPENAI_API_KEY and OPENAI_BASE_URL
         self.model = model or DEFAULT_MODEL
+
+    @staticmethod
+    def _to_native(conv: list[dict]) -> list[dict]:
+        out: list[dict] = []
+        for m in conv:
+            if m["role"] == "user":
+                out.append({"role": "user", "content": m["content"]})
+            elif m["role"] == "assistant":
+                if m.get("raw"):
+                    out.extend(m["raw"])  # replay native output items (reasoning, messages, calls)
+                else:
+                    if m["content"]:
+                        out.append({"role": "assistant", "content": m["content"]})
+                    out.extend({"type": "function_call", "call_id": t["id"], "name": t["name"],
+                                "arguments": json.dumps(t["args"])} for t in m["tool_calls"])
+            elif m["role"] == "tool":
+                out.append({"type": "function_call_output", "call_id": m["tool_call_id"], "output": m["content"]})
+        return out
+
+    def complete(self, messages: list[dict], tools: list[dict]) -> AssistantMessage:
+        system, conv = split_system(messages)
+        resp = self.client.responses.create(
+            model=self.model,
+            instructions=system,
+            input=self._to_native(conv),
+            tools=[{"type": "function", "name": t["name"], "description": t["description"],
+                    "parameters": t["parameters"]} for t in tools],
+        )
+        raw = [item.model_dump(mode="json", exclude_none=True) for item in resp.output]
+        calls, texts, refusals = [], [], []
+        for item in resp.output:
+            if item.type == "function_call":
+                try:
+                    args = json.loads(item.arguments or "{}")
+                except json.JSONDecodeError:
+                    args = {"_unparseable": item.arguments}
+                calls.append(ToolCall(item.call_id, item.name, args))
+            elif item.type == "message":
+                for c in item.content or []:
+                    if c.type == "output_text":
+                        texts.append(c.text)
+                    elif c.type == "refusal":
+                        refusals.append(c.refusal)
+        if refusals and not calls:
+            return AssistantMessage(f"[refusal] {' '.join(refusals)}", [], raw=raw, stop_reason="refusal")
+        return AssistantMessage("".join(texts), calls, raw=raw,
+                                stop_reason="tool_use" if calls else str(resp.status))
+
+
+class ChatCompletionsProvider:
+    """Any OpenAI-compatible Chat Completions endpoint (base for open-weights servers)."""
+
+    name = "chat"
 
     @staticmethod
     def _to_native(system: str, conv: list[dict]) -> list[dict]:
@@ -63,7 +119,7 @@ class OpenAIProvider:
                                 stop_reason="refusal" if refusal else choice.finish_reason)
 
 
-class OpenWeightsProvider(OpenAIProvider):
+class OpenWeightsProvider(ChatCompletionsProvider):
     """Open-weights model behind any OpenAI-compatible server (Ollama, vLLM, llama.cpp, LM Studio).
 
     OPENWEIGHTS_BASE_URL  e.g. http://localhost:11434/v1   (required)

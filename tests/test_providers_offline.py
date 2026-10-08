@@ -75,10 +75,48 @@ def test_anthropic_adapter_roundtrip():
 
 # --------------------------------------------------------------------- openai
 
-def test_openai_adapter_roundtrip():
+def test_openai_responses_adapter_roundtrip():
+    pytest.importorskip("openai")
+    from openai.types.responses import Response
+    from demo.providers.openai_ import OpenAIProvider
+    import json
+
+    seen = []
+
+    class FakeResponses:
+        def create(self, **kw):
+            seen.append(kw)
+            items = kw["input"]
+            assert kw["instructions"] and kw["tools"][0]["type"] == "function"
+            first = items[0]["content"]
+            n = sum(1 for i in items if i.get("type") == "reasoning")  # one reasoning item per model turn
+            if n:
+                assert items[-1]["type"] == "function_call_output"
+            step = _step(first, n)
+            out = [{"type": "reasoning", "id": f"rs_{n}", "summary": []}]
+            if step is None:
+                out.append({"type": "message", "id": f"m{n}", "role": "assistant", "status": "completed",
+                            "content": [{"type": "output_text", "text": "ok", "annotations": []}]})
+            else:
+                out.append({"type": "function_call", "id": f"fc{n}", "call_id": f"c{n}", "name": step[0],
+                            "arguments": json.dumps(step[1]), "status": "completed"})
+            return Response.model_validate({"id": "r", "object": "response", "created_at": 0, "model": kw["model"],
+                                            "status": "completed", "parallel_tool_calls": True,
+                                            "tool_choice": "auto", "tools": [], "output": out})
+
+    p = OpenAIProvider.__new__(OpenAIProvider)
+    p.client = type("C", (), {"responses": FakeResponses()})()
+    p.model = "gpt-test"
+    assert run_scenario(SC, p, defense=False)["exfiltrated"]
+    assert not run_scenario(SC, p, defense=True)["exfiltrated"]
+    # reasoning items are replayed verbatim on the next request
+    assert any(i.get("type") == "reasoning" for kw in seen for i in kw["input"])
+
+
+def test_openweights_chat_adapter_roundtrip():
     pytest.importorskip("openai")
     from openai.types.chat import ChatCompletion
-    from demo.providers.openai_ import OpenAIProvider
+    from demo.providers.openai_ import OpenWeightsProvider
     import json
 
     class FakeCompletions:
@@ -99,9 +137,9 @@ def test_openai_adapter_roundtrip():
                                                   "model": kw["model"], "choices": [
                                                       {"index": 0, "message": msg, "finish_reason": fin}]})
 
-    p = OpenAIProvider.__new__(OpenAIProvider)
+    p = OpenWeightsProvider.__new__(OpenWeightsProvider)
     p.client = type("C", (), {"chat": type("Ch", (), {"completions": FakeCompletions()})()})()
-    p.model = "gpt-test"
+    p.model = "local-test"
     assert run_scenario(SC, p, defense=False)["exfiltrated"]
     assert not run_scenario(SC, p, defense=True)["exfiltrated"]
 
