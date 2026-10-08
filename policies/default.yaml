@@ -1,0 +1,28 @@
+# memgate default flow policy.
+#
+# sources: trust assigned to each tool's *output* when it is recorded in the
+#   taint ledger. `none` = output is not recorded (sinks, and memory tools whose
+#   provenance the store tracks itself). Unlisted tools get `default`.
+sources:
+  web_fetch: untrusted
+  read_inbox: untrusted
+  memory_read: none
+  memory_write: none
+  send_email: none
+  forward_email: none
+  default: untrusted
+
+sinks:
+  send_email:
+    args: [to, cc, bcc, body]
+    deny_if_tainted_by: [web_fetch, untrusted_memory, read_inbox]
+    on_violation: require_confirm      # or deny
+  forward_email:
+    args: [to, note]
+    deny_if_tainted_by: [web_fetch, untrusted_memory, read_inbox]
+    on_violation: require_confirm
+  memory_write:
+    args: [note]
+    # untrusted_memory is added beyond the spec's list so a quarantined note
+    # cannot be laundered into trusted memory by having the model re-write it.
+    quarantine_if_tainted_by: [web_fetch, read_inbox, untrusted_memory]
