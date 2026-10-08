@@ -1,11 +1,11 @@
-# memgate
+# agent-memgate
 
-A reproducible demonstration that a single untrusted web page can plant a persistent instruction in an agent's memory that makes it leak email in a later, clean session, plus **memgate**, a small library that stops it with provenance-labelled memory and flow policy at the tool boundary.
+A reproducible demonstration that a single untrusted web page can plant a persistent instruction in an agent's memory that makes it leak email in a later, clean session, plus **agent-memgate** ("memgate"), a small library that stops it with provenance-labelled memory and flow policy at the tool boundary.
 
 ## 60-second demo
 
 ```bash
-git clone https://github.com/haqinam/memgate && cd memgate
+git clone https://github.com/haqinam/agent-memgate && cd agent-memgate
 uv run python demo/run_demo.py --provider mock --defense off   # → RESULT: EXFILTRATED
 uv run python demo/run_demo.py --provider mock --defense on    # → RESULT: BLOCKED
 ```
@@ -56,7 +56,7 @@ Transcripts for every trial land in `results/transcripts/`.
 ## Using memgate
 
 ```python
-from memgate import FlowPolicy, ProvenanceMemoryStore, ToolBoundary
+from agent_memgate import FlowPolicy, ProvenanceMemoryStore, ToolBoundary
 
 store = ProvenanceMemoryStore()
 boundary = ToolBoundary(FlowPolicy.load("policies/default.yaml"))

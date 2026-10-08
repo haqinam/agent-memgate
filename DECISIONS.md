@@ -77,6 +77,13 @@ Choices made while building this that a reviewer may want to check or argue with
   covered by offline tests (`tests/test_providers_offline.py`) that feed real SDK response
   types through a fake transport.
 
+## Naming
+
+- Distribution `agent-memgate`, import package `agent_memgate`. The name `memgate` is
+  already taken on PyPI by an unrelated agent-memory project; reusing the import name
+  `memgate` would make the two packages silently overwrite each other if both were
+  installed. "memgate" is kept as the short name in prose and in the demo output.
+
 ## Skipped
 
 - `memgate/adapters/langgraph.py`: skipped (the spec allows this). The boundary is a plain

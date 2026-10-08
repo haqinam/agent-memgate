@@ -1,4 +1,4 @@
-from memgate.taint import (
+from agent_memgate.taint import (
     ExplicitFlowMatcher, Label, TaintLedger, Tainted, Trust, extract_identifiers, join, taint_of,
 )
 

@@ -5,7 +5,7 @@ import pytest
 from demo.providers.mock import MockProvider
 from demo.runner import build, run_scenario, score
 from demo.world import load_scenario
-from memgate import ExplicitFlowMatcher, Label, TaintLedger, Trust
+from agent_memgate import ExplicitFlowMatcher, Label, TaintLedger, Trust
 
 ROOT = Path(__file__).resolve().parents[1]
 SCEN = sorted((ROOT / "scenarios").glob("*.yaml"))

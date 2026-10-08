@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from memgate import AuditLog, FlowPolicy, ProvenanceMemoryStore, ToolBoundary
+from agent_memgate import AuditLog, FlowPolicy, ProvenanceMemoryStore, ToolBoundary
 
 ROOT = Path(__file__).resolve().parents[1]
 EVIL = "archive-compliance@mail-archive-svc.example"
@@ -25,7 +25,7 @@ def test_langgraph_react_agent_attack_blocked():
     warnings.filterwarnings("ignore", message="create_react_agent")
     from langgraph.prebuilt import create_react_agent
 
-    from memgate.adapters.langgraph import gate_tools, memory_tools
+    from agent_memgate.adapters.langgraph import gate_tools, memory_tools
 
     sent = []
 
@@ -76,7 +76,7 @@ def test_mcp_session_wrapper():
     pytest.importorskip("mcp")
     from mcp.types import CallToolResult, TextContent
 
-    from memgate.adapters.mcp import GatedClientSession
+    from agent_memgate.adapters.mcp import GatedClientSession
 
     calls = []
 

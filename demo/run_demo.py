@@ -21,7 +21,7 @@ from rich.text import Text  # noqa: E402
 from demo.providers import NAMES, make_provider  # noqa: E402
 from demo.runner import ROOT, build, score  # noqa: E402
 from demo.world import load_scenario  # noqa: E402
-from memgate import AuditLog  # noqa: E402
+from agent_memgate import AuditLog  # noqa: E402
 
 console = Console(highlight=False)
 

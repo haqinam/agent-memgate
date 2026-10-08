@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-from memgate import Label, ProvenanceMemoryStore, ToolBoundary
+from agent_memgate import Label, ProvenanceMemoryStore, ToolBoundary
 
 from .world import World
 

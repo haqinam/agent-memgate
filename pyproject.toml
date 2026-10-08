@@ -1,5 +1,5 @@
 [project]
-name = "memgate"
+name = "agent-memgate"
 version = "0.1.0"
 description = "Provenance-tagged agent memory and flow policy at the tool boundary, with a reproducible memory-poisoning demo."
 readme = "README.md"
@@ -24,7 +24,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["memgate"]
+packages = ["agent_memgate"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

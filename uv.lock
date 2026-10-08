@@ -8,6 +8,72 @@ resolution-markers = [
 ]
 
 [[package]]
+name = "agent-memgate"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "pyyaml" },
+    { name = "rich" },
+]
+
+[package.optional-dependencies]
+all = [
+    { name = "anthropic" },
+    { name = "google-genai" },
+    { name = "langchain-core" },
+    { name = "langgraph" },
+    { name = "mcp" },
+    { name = "openai" },
+]
+anthropic = [
+    { name = "anthropic" },
+]
+dev = [
+    { name = "pytest" },
+]
+gemini = [
+    { name = "google-genai" },
+]
+langgraph = [
+    { name = "langchain-core" },
+    { name = "langgraph" },
+]
+mcp = [
+    { name = "mcp" },
+]
+openai = [
+    { name = "openai" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "anthropic", marker = "extra == 'all'", specifier = ">=0.40" },
+    { name = "anthropic", marker = "extra == 'anthropic'", specifier = ">=0.40" },
+    { name = "google-genai", marker = "extra == 'all'", specifier = ">=1.0" },
+    { name = "google-genai", marker = "extra == 'gemini'", specifier = ">=1.0" },
+    { name = "langchain-core", marker = "extra == 'all'", specifier = ">=0.3" },
+    { name = "langchain-core", marker = "extra == 'langgraph'", specifier = ">=0.3" },
+    { name = "langgraph", marker = "extra == 'all'", specifier = ">=0.2" },
+    { name = "langgraph", marker = "extra == 'langgraph'", specifier = ">=0.2" },
+    { name = "mcp", marker = "extra == 'all'", specifier = ">=1.0" },
+    { name = "mcp", marker = "extra == 'mcp'", specifier = ">=1.0" },
+    { name = "openai", marker = "extra == 'all'", specifier = ">=1.40" },
+    { name = "openai", marker = "extra == 'openai'", specifier = ">=1.40" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "rich", specifier = ">=13.0" },
+]
+provides-extras = ["anthropic", "openai", "gemini", "langgraph", "mcp", "all", "dev"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=8.0" }]
+
+[[package]]
 name = "annotated-types"
 version = "0.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -886,72 +952,6 @@ wheels = [
 ]
 
 [[package]]
-name = "memgate"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "pyyaml" },
-    { name = "rich" },
-]
-
-[package.optional-dependencies]
-all = [
-    { name = "anthropic" },
-    { name = "google-genai" },
-    { name = "langchain-core" },
-    { name = "langgraph" },
-    { name = "mcp" },
-    { name = "openai" },
-]
-anthropic = [
-    { name = "anthropic" },
-]
-dev = [
-    { name = "pytest" },
-]
-gemini = [
-    { name = "google-genai" },
-]
-langgraph = [
-    { name = "langchain-core" },
-    { name = "langgraph" },
-]
-mcp = [
-    { name = "mcp" },
-]
-openai = [
-    { name = "openai" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "anthropic", marker = "extra == 'all'", specifier = ">=0.40" },
-    { name = "anthropic", marker = "extra == 'anthropic'", specifier = ">=0.40" },
-    { name = "google-genai", marker = "extra == 'all'", specifier = ">=1.0" },
-    { name = "google-genai", marker = "extra == 'gemini'", specifier = ">=1.0" },
-    { name = "langchain-core", marker = "extra == 'all'", specifier = ">=0.3" },
-    { name = "langchain-core", marker = "extra == 'langgraph'", specifier = ">=0.3" },
-    { name = "langgraph", marker = "extra == 'all'", specifier = ">=0.2" },
-    { name = "langgraph", marker = "extra == 'langgraph'", specifier = ">=0.2" },
-    { name = "mcp", marker = "extra == 'all'", specifier = ">=1.0" },
-    { name = "mcp", marker = "extra == 'mcp'", specifier = ">=1.0" },
-    { name = "openai", marker = "extra == 'all'", specifier = ">=1.40" },
-    { name = "openai", marker = "extra == 'openai'", specifier = ">=1.40" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
-    { name = "pyyaml", specifier = ">=6.0" },
-    { name = "rich", specifier = ">=13.0" },
-]
-provides-extras = ["anthropic", "openai", "gemini", "langgraph", "mcp", "all", "dev"]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=8.0" }]
-
-[[package]]
 name = "openai"
 version = "3.26.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1741,8 +1741,8 @@ name = "uvicorn"
 version = "0.54.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "click" },
-    { name = "h11" },
+    { name = "click", marker = "python_full_version < '3.12' or python_full_version >= '3.14' or sys_platform != 'emscripten'" },
+    { name = "h11", marker = "python_full_version < '3.12' or python_full_version >= '3.14' or sys_platform != 'emscripten'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/da/34/30e9280707135d2cfc589dfff3cb796bd07a3aeb1a3e415ba09dd89d7bb4/uvicorn-0.54.0.tar.gz", hash = "sha256:a2e33cbfaa0306f8e6b0c13e0cb89d7d7a2da3e62b90c66e18c33d9807b28620", size = 112283, upload-time = "2026-09-25T06:52:37.601Z" }
 wheels = [

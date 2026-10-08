@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from memgate import (
+from agent_memgate import (
     AuditLog, FlowPolicy, Kind, Label, ProvenanceMemoryStore, TaintLedger, Tainted, ToolBoundary,
     Trust, verify_log_lines,
 )

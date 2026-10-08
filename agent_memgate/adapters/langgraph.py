@@ -1,6 +1,6 @@
 """LangGraph / LangChain adapter.
 
-    from memgate.adapters.langgraph import gate_tools, memory_tools
+    from agent_memgate.adapters.langgraph import gate_tools, memory_tools
     tools = gate_tools([web_fetch, send_email], boundary, session=lambda: thread_id)
     tools += memory_tools(store, boundary, session=lambda: thread_id)
     graph = create_react_agent(model, tools, prompt=lambda s: base + boundary.inject_memory(store, thread_id))

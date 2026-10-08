@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from memgate import AuditLog, FlowPolicy, ProvenanceMemoryStore, ToolBoundary, deny_all_confirm
+from agent_memgate import AuditLog, FlowPolicy, ProvenanceMemoryStore, ToolBoundary, deny_all_confirm
 
 from .agent import Agent, EventFn
 from .providers.base import Provider

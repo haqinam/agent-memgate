@@ -32,7 +32,7 @@ import demo.run_demo as rd  # noqa: E402
 
 W, H, FPS = 1920, 1080, 30
 COLS = 110
-REPO = "github.com/haqinam/memgate"
+REPO = "github.com/haqinam/agent-memgate"
 OUT = ROOT / "media" / "memgate-demo.mp4"
 
 THEME = TerminalTheme(
@@ -284,7 +284,7 @@ def main() -> int:
                      ["Memory labelled by where it came from.",
                       "A flow policy checked at the tool boundary."]), 3.0)
     play_run(v, "on", runs["on"])
-    v.put(frame_card("memgate", ["Provenance-labelled agent memory + flow policy at the tool boundary.",
+    v.put(frame_card("agent-memgate", ["Provenance-labelled agent memory + flow policy at the tool boundary.",
                                  "Open source, Apache-2.0. Reproduce it in one command."]), 4.0)
     v.close()
     print(f"wrote {OUT}  ({v.frames / FPS:.1f}s, {OUT.stat().st_size / 1e6:.1f} MB)")

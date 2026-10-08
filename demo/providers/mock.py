@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import re
 
-from memgate.taint import _EMAIL
+from agent_memgate.taint import _EMAIL
 
 from .base import AssistantMessage, ToolCall, split_system
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-from memgate import ProvenanceMemoryStore, ToolBoundary
+from agent_memgate import ProvenanceMemoryStore, ToolBoundary
 
 from .providers.base import Provider
 from .world import World
