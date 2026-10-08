@@ -17,7 +17,10 @@ _EXTRA = {"anthropic": "anthropic", "openai": "openai", "gemini": "gemini", "ope
 
 def available() -> list[str]:
     """`mock` always; real providers whose env var is set."""
-    return ["mock"] + [p for p, k in ENV_KEYS.items() if os.environ.get(k)]
+    have = [p for p, k in ENV_KEYS.items() if os.environ.get(k)]
+    if "anthropic" not in have and os.environ.get("ANTHROPIC_AUTH_TOKEN"):  # the SDK accepts either
+        have.insert(0, "anthropic")
+    return ["mock"] + have
 
 
 def make_provider(name: str, scenario: dict, model: str | None = None):

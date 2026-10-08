@@ -18,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from demo.providers import NAMES, available, make_provider  # noqa: E402
+from demo.providers import ENV_KEYS, NAMES, available, make_provider  # noqa: E402
 from demo.runner import ROOT, run_scenario  # noqa: E402
 from demo.world import load_scenario  # noqa: E402
 
@@ -73,6 +73,10 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     providers = args.providers or available()
+    missing = [p for p in providers if p not in available()]
+    if missing:
+        need = ", ".join(f"{p}: {ENV_KEYS[p]}" for p in missing if p in ENV_KEYS)
+        raise SystemExit(f"No credentials for {', '.join(missing)}. Set the env var in this shell first ({need}).")
     models = parse_models(args.model)
     paths = [Path(p) for p in args.scenarios] if args.scenarios else sorted((ROOT / "scenarios").glob("*.yaml"))
     out = Path(args.out)
@@ -88,6 +92,8 @@ def main(argv: list[str] | None = None) -> int:
                     provider = make_provider(pname, sc, models.get(pname))
                     t0 = time.time()
                     res = run_scenario(sc, provider, defense)
+                    if any("authentic" in e.lower() or "api key" in e.lower() for e in res["errors"]):
+                        raise SystemExit(f"{pname}: authentication failed, stopping. {res['errors'][0]}")
                     res["elapsed_s"] = round(time.time() - t0, 2)
                     res["trial"] = t
                     key = (pname, provider.model, sc["name"], defense, res["expect_bypass"])
