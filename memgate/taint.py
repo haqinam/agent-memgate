@@ -94,6 +94,12 @@ def extract_identifiers(text: str) -> set[str]:
     return ids
 
 
+def mask_identifiers(text: str) -> str:
+    for rx in (_URL, _EMAIL, _TOKEN):
+        text = rx.sub("\x00", text)
+    return text
+
+
 def normalize(text: str) -> str:
     return re.sub(r"\s+", " ", text).casefold()
 
@@ -148,11 +154,15 @@ class ExplicitFlowMatcher:
         self.min_len = min_len
 
     def substring_labels(self, value: str, ledger: TaintLedger) -> set[Label]:
-        v = normalize(value)
+        # Identifiers are attributed only by the first-seen rule. Masking them
+        # here stops shared fragments (e.g. "@example.com") from tainting a
+        # user-supplied address just because another address shares a domain.
+        v = normalize(mask_identifiers(value))
         n = self.min_len
-        if len(v) < n:
-            return set()
         vgrams = {v[i : i + n] for i in range(len(v) - n + 1)}
+        vgrams = {g for g in vgrams if "\x00" not in g}
+        if not vgrams:
+            return set()
         return {r.label for r in ledger.records if not vgrams.isdisjoint(r.grams(n))}
 
     def identifier_labels(self, value: str, ledger: TaintLedger) -> set[Label]:

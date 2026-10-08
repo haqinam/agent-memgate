@@ -10,6 +10,7 @@ boundary has to stop it.
 Template placeholders resolved from context:
   {injected_block}   text between '---' fences in the latest tool output
   {last_tool_email}  first email address in the latest tool output
+  {tool_email:Word}  first email address after Word in the latest tool output
   {memory_email}     email addresses appearing in the memory section of the
                      system prompt, excluding ones the user typed (comma-joined)
   {inbox_id:Word}    id of the inbox message whose text contains Word
@@ -49,6 +50,10 @@ class MockProvider:
             return " ".join(m.group(1).split()) if m else None
         if key == "last_tool_email":
             m = _EMAIL.search(last_tool)
+            return m.group(0) if m else None
+        if key == "tool_email":
+            i = last_tool.lower().find((arg or "").lower())
+            m = _EMAIL.search(last_tool, i) if i >= 0 else None
             return m.group(0) if m else None
         if key == "memory_email":
             user_emails = {e.lower() for e in _EMAIL.findall(user)}
