@@ -55,6 +55,20 @@ def _canonical(obj: Any) -> str:
     return json.dumps(obj, sort_keys=True, separators=(",", ":"), default=str)
 
 
+@dataclass
+class Gate:
+    """Pre-execution verdict for one tool call (see ToolBoundary.gate)."""
+    name: str
+    session: str
+    args: dict
+    kwargs: dict  # args plus boundary-assigned _label/_derived_from for labelled tools
+    tainted: dict[str, Tainted]
+    decision: Decision
+    execute: bool
+    confirmed: bool | None
+    assigned: Label | None
+
+
 class AuditLog:
     """Append-only JSONL log; each line carries an HMAC-SHA256 over its body."""
 
@@ -139,50 +153,75 @@ class ToolBoundary:
         return Label("agent", Trust.USER, session), derived
 
     # --------------------------------------------------------------- call
-    def call(self, name: str, args: dict, session: str) -> BoundaryResult:
+    # `call` / `acall` run registered tools. Framework adapters that own tool
+    # execution themselves use the two halves directly: `gate` (taint, policy,
+    # confirm, label) before running the tool and `finish` (ledger, audit) after.
+
+    def gate(self, name: str, args: dict, session: str, *, labelled: bool = False,
+             known: bool = True) -> Gate:
         args = dict(args or {})
         tainted = {k: taint_of(v, self.ledger, self.matcher) for k, v in args.items()}
-        if name not in self.tools:
-            decision = Decision(Kind.DENY, f"unknown tool {name!r}")
-        else:
-            decision = self.policy.evaluate(name, tainted)
-
+        decision = self.policy.evaluate(name, tainted) if known else Decision(Kind.DENY, f"unknown tool {name!r}")
         confirmed: bool | None = None
         execute = decision.kind == Kind.ALLOW
         if decision.kind == Kind.REQUIRE_CONFIRM:
             confirmed = bool(self.confirm(name, args, decision))
             execute = confirmed
-
+        kwargs = dict(args)
         assigned: Label | None = None
-        if execute:
-            tool = self.tools[name]
-            kwargs = dict(args)
-            if tool.labelled:
-                assigned, derived = self._assign_label(name, tainted, decision, session)
-                kwargs["_label"] = assigned
-                kwargs["_derived_from"] = derived
-            try:
-                output = str(tool.fn(**kwargs))
-            except TypeError as e:  # bad args from the model
-                output = f"ERROR: {e}"
-            trust = self.policy.source_trust(name)
-            if trust is not None:
-                self.ledger.record(output, Label(name, trust, session))
-        else:
-            verb = "requires user confirmation (declined)" if decision.kind == Kind.REQUIRE_CONFIRM else "denied"
-            output = f"BLOCKED by memgate: call {verb}. Reason: {decision.reason}"
+        if execute and labelled:
+            assigned, derived = self._assign_label(name, tainted, decision, session)
+            kwargs["_label"] = assigned
+            kwargs["_derived_from"] = derived
+        return Gate(name, session, args, kwargs, tainted, decision, execute, confirmed, assigned)
 
+    def finish(self, g: Gate, output: object | None = None) -> BoundaryResult:
+        if g.execute:
+            out = str(output)
+            trust = self.policy.source_trust(g.name)
+            if trust is not None:
+                self.ledger.record(out, Label(g.name, trust, g.session))
+        else:
+            verb = "requires user confirmation (declined)" if g.decision.kind == Kind.REQUIRE_CONFIRM else "denied"
+            out = f"BLOCKED by memgate: call {verb}. Reason: {g.decision.reason}"
         self.audit.append({
             "ts": round(time.time(), 3),
-            "session": session,
-            "tool": name,
-            "decision": decision.kind.value,
-            "executed": execute,
-            "confirmed": confirmed,
-            "reason": decision.reason,
-            "taint_sources": decision.taint_sources,
-            "violations": decision.violations,
-            "assigned_label": assigned.to_dict() if assigned else None,
-            "args_hash": hashlib.sha256(_canonical(args).encode()).hexdigest(),
+            "session": g.session,
+            "tool": g.name,
+            "decision": g.decision.kind.value,
+            "executed": g.execute,
+            "confirmed": g.confirmed,
+            "reason": g.decision.reason,
+            "taint_sources": g.decision.taint_sources,
+            "violations": g.decision.violations,
+            "assigned_label": g.assigned.to_dict() if g.assigned else None,
+            "args_hash": hashlib.sha256(_canonical(g.args).encode()).hexdigest(),
         })
-        return BoundaryResult(name, args, decision, execute, output, tainted, assigned, confirmed)
+        return BoundaryResult(g.name, g.args, g.decision, g.execute, out, g.tainted, g.assigned, g.confirmed)
+
+    def call(self, name: str, args: dict, session: str) -> BoundaryResult:
+        tool = self.tools.get(name)
+        g = self.gate(name, args, session, labelled=bool(tool and tool.labelled), known=tool is not None)
+        output = None
+        if g.execute:
+            try:
+                output = tool.fn(**g.kwargs)
+            except TypeError as e:  # bad args from the model
+                output = f"ERROR: {e}"
+        return self.finish(g, output)
+
+    async def acall(self, name: str, args: dict, session: str) -> BoundaryResult:
+        """Like `call`, for registered tools that may be coroutine functions."""
+        import inspect
+
+        tool = self.tools.get(name)
+        g = self.gate(name, args, session, labelled=bool(tool and tool.labelled), known=tool is not None)
+        output = None
+        if g.execute:
+            try:
+                output = tool.fn(**g.kwargs)
+                if inspect.isawaitable(output):
+                    output = await output
+            except TypeError as e:
+                output = f"ERROR: {e}"
+        return self.finish(g, output)

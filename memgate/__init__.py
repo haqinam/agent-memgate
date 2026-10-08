@@ -1,6 +1,6 @@
 """memgate: provenance-labelled agent memory + flow policy at the tool boundary."""
 
-from .boundary import AuditLog, BoundaryResult, ToolBoundary, deny_all_confirm, verify_log_lines
+from .boundary import AuditLog, BoundaryResult, Gate, ToolBoundary, deny_all_confirm, verify_log_lines
 from .memory import TRUSTED_MEMORY, UNTRUSTED_MEMORY, MemoryEntry, ProvenanceMemoryStore
 from .policy import Allow, Decision, Deny, FlowPolicy, Kind, RequireConfirm, SinkRule
 from .taint import (
@@ -17,7 +17,7 @@ from .taint import (
 
 __all__ = [
     "Allow", "AuditLog", "BoundaryResult", "Decision", "Deny", "ExplicitFlowMatcher",
-    "FlowPolicy", "Kind", "Label", "Matcher", "MemoryEntry", "ProvenanceMemoryStore",
+    "FlowPolicy", "Gate", "Kind", "Label", "Matcher", "MemoryEntry", "ProvenanceMemoryStore",
     "RequireConfirm", "SinkRule", "TaintLedger", "Tainted", "ToolBoundary", "Trust",
     "TRUSTED_MEMORY", "UNTRUSTED_MEMORY", "deny_all_confirm", "extract_identifiers",
     "join", "taint_of", "verify_log_lines",
