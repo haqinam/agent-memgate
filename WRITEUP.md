@@ -12,7 +12,7 @@ We ran four versions of the attack against Claude Sonnet 5.5 and GPT-6.1 Sol, fi
 
 ## Threat model
 
-The attacker controls one thing the assistant reads during normal work, a web page or an inbound email, and nothing else: not the user, the system prompt, the model or the code. The assistant can write to a memory loaded into every new session, and it can send or forward email. Add the untrusted input and you have what Simon Willison calls the lethal trifecta: private data, untrusted content, and a way to send things out. Memory adds a fourth ingredient, time. The untrusted content and the outgoing email no longer have to meet in the same conversation.
+The attacker controls one thing the assistant reads during normal work, a web page or an inbound email, and nothing else: not the user, the system prompt, the model or the code. The assistant can write to a memory loaded into every new session, and it can send or forward email. Add the untrusted input and you have what Simon Willison calls the [lethal trifecta](https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/) [7]: private data, untrusted content, and a way to send things out. Memory adds a fourth ingredient, time. The untrusted content and the outgoing email no longer have to meet in the same conversation.
 
 We count the attack as successful only if an email actually goes out with the attacker's address in `to`, `cc` or `bcc`. Planning to send it, or trying and being stopped, does not count.
 
@@ -67,30 +67,43 @@ In the canonical run, the session-two note is saved as `source=web_fetch, trust=
 
 ## Related work
 
-**CaMeL** (Debenedetti et al., 2025, [arXiv:2503.18813](https://arxiv.org/abs/2503.18813)) separates the control flow derived from the user's request from the data the agent handles, attaches capabilities to values, and checks policies at tool calls. We borrow that stance in a much weaker form: no restructuring of the agent, and labels inferred by string matching rather than tracked through an interpreter. What we add is narrow: provenance carried into the memory store, so it survives across sessions.
+**CaMeL** [1] (Debenedetti et al., 2025, [arXiv:2503.18813](https://arxiv.org/abs/2503.18813)) separates the control flow derived from the user's request from the data the agent handles, attaches capabilities to values, and checks policies at tool calls. We borrow that stance in a much weaker form: no restructuring of the agent, and labels inferred by string matching rather than tracked through an interpreter. What we add is narrow: provenance carried into the memory store, so it survives across sessions.
 
-**"Securing AI Agents with Information-Flow Control"** (Costa et al., 2025, [arXiv:2505.23643](https://arxiv.org/abs/2505.23643)) brings information-flow labels and enforcement to agent planning. Our labels are a very simple case of that idea: a source plus three levels of trust.
+**"Securing AI Agents with Information-Flow Control"** [2] (Costa et al., 2025, [arXiv:2505.23643](https://arxiv.org/abs/2505.23643)) brings information-flow labels and enforcement to agent planning. Our labels are a very simple case of that idea: a source plus three levels of trust.
 
-**"Ghost in the Agent"** (Cai et al., 2026, [arXiv:2604.23374](https://arxiv.org/abs/2604.23374)) presents NeuroTaint, a taint-tracking framework for LLM agents. It argues that taint in agents spreads not only by copied content but through semantic transformation, causal influence on decisions, and persistence across sessions through memory, and it reconstructs provenance by auditing execution traces offline. It is the closest work to ours and covers exactly what our string matcher misses. The two are complementary: NeuroTaint audits after the fact with semantic and causal evidence; agent-memgate enforces at the moment of the tool call with a much cruder, explicit-flow signal. A semantic tracker of that kind is the natural replacement for our matcher.
+**"Ghost in the Agent"** [3] (Cai et al., 2026, [arXiv:2604.23374](https://arxiv.org/abs/2604.23374)) presents NeuroTaint, a taint-tracking framework for LLM agents. It argues that taint in agents spreads not only by copied content but through semantic transformation, causal influence on decisions, and persistence across sessions through memory, and it reconstructs provenance by auditing execution traces offline. It is the closest work to ours and covers exactly what our string matcher misses. The two are complementary: NeuroTaint audits after the fact with semantic and causal evidence; agent-memgate enforces at the moment of the tool call with a much cruder, explicit-flow signal. A semantic tracker of that kind is the natural replacement for our matcher.
 
-**AgentPoison** (Chen et al., 2024) plants optimised backdoor triggers in an agent's memory or retrieval store, assuming the attacker can write to it. Ours cannot; the note gets in through the agent's own memory tool via indirect prompt injection.
+**AgentPoison** [4] (Chen et al., 2024, [arXiv:2407.12784](https://arxiv.org/abs/2407.12784)) plants optimised backdoor triggers in an agent's memory or retrieval store, assuming the attacker can write to it. Ours cannot; the note gets in through the agent's own memory tool via indirect prompt injection.
 
-**AgentDojo** (Debenedetti et al., 2024) is a benchmark for prompt-injection attacks and defenses on tool-using agents. Its tasks are mostly single-session. Our scenarios span three sessions and could be ported to it.
+**AgentDojo** [5] (Debenedetti et al., 2024, [arXiv:2406.13352](https://arxiv.org/abs/2406.13352)) is a benchmark for prompt-injection attacks and defenses on tool-using agents. Its tasks are mostly single-session. Our scenarios span three sessions and could be ported to it.
 
-**Meta's "Agents Rule of Two"** suggests combining at most two of untrusted input, sensitive data, and external action. Memory makes that hard to audit: a session with only sensitive data and an external action may still carry untrusted input from last week. Boundary labels make that hidden third ingredient visible.
+**Meta's ["Agents Rule of Two"](https://ai.meta.com/blog/practical-ai-agent-security/)** [6] (2025) suggests combining at most two of untrusted input, sensitive data, and external action. Memory makes that hard to audit: a session with only sensitive data and an external action may still carry untrusted input from last week. Boundary labels make that hidden third ingredient visible.
 
 ## Limitations
 
-- **It only sees copying.** The matcher catches text and addresses that were carried over directly. It does not catch meaning carried over in other words, the semantic and causal flows that Cai et al. argue dominate in agents.
-- **Rewording beats it, and we show how.** In `memory_bcc_paraphrase_bypass` the page describes the address ("records, then seventy-seven, at offsite and vault run together"). A model that decodes it and saves its own summary leaves nothing to match, so the note is trusted and the scripted model's email goes out with the defense on. Both real models decoded the address but declined to save it, so the bypass was never exercised against them.
+- **The defense was never tested against a real model that fell for the attack.** Both frontier models refused the bait in all 80 runs, so agent-memgate's blocking was only ever exercised against the scripted mock. We show that the mechanism works, not how much it adds in practice against a model that is actually fooled.
+- **The attacks are easy to spot and do not adapt.** Our payloads are fixed and fairly overt; the main one is labelled "ASSISTANT MAINTENANCE NOTE". Benchmarks such as AgentDojo [5] test attacks and defenses more systematically, and a motivated attacker would iterate. Frontier models' 80/80 resistance partly reflects how easy these injections are to recognise.
+- **It only sees copying.** The matcher catches text and addresses carried over directly. It misses meaning carried over in other words, and decisions influenced without copying. Cai et al. [3] argue that these semantic and causal flows, including persistence through memory, are central in agents and cannot be captured by exact string matching.
+- **Rewording beats it, and we show how.** In `memory_bcc_paraphrase_bypass` the page describes the address ("records, then seventy-seven, at offsite and vault run together"). A model that decodes it and saves its own summary leaves nothing to match, so the note is trusted and the scripted model's email goes out with the defense on. This is a concrete case of the semantic-transformation flows described in [3]. Both real models decoded the address but declined to save it, so the bypass was never exercised against them.
+- **Labels are inferred, not tracked.** Systems such as CaMeL [1] and the IFC approach of Costa et al. [2] propagate labels or capabilities through the agent's execution. We reconstruct provenance after the fact by matching strings, which is weaker and easier to evade.
 - **The first-appearance rule misfires.** A colleague's address first seen in the inbox gets flagged when the user later asks to email them. Asking for confirmation softens this but doesn't fix it.
-- **Small study.** Four scenarios, one domain, a synthetic world, two real models, five trials per cell, and a system prompt that actively encourages saving memories.
+- **Small study.** Four scenarios, one domain, a synthetic world, two real models, five trials per cell, and a system prompt that actively encourages saving memories. For comparison, Cai et al. [3] evaluate on 400 scenarios across 20 agent frameworks.
 - **The mock is scripted.** It tests the plumbing and the enforcement, not how real models behave.
 - **The record of tool outputs lasts one run.** Persisting it across processes is not implemented yet.
 
 ## Future work
 
 A semantic matcher behind the same interface, drawing on approaches such as NeuroTaint, with measured false-positive rates and latency suitable for enforcement at call time. Memory integrity when agents share a store. A policy language over flows rather than per-argument lists. Porting to AgentDojo. And harder attacks, such as slow poisoning that builds trust over several sessions before asking for anything.
+
+## References
+
+1. E. Debenedetti et al. *Defeating Prompt Injections by Design* (CaMeL). 2025. [arXiv:2503.18813](https://arxiv.org/abs/2503.18813)
+2. M. Costa et al. *Securing AI Agents with Information-Flow Control*. 2025. [arXiv:2505.23643](https://arxiv.org/abs/2505.23643)
+3. Y. Cai, W. Tang, C. Wen, S. Qin. *Ghost in the Agent: Redefining Information Flow Tracking for LLM Agents*. 2026. [arXiv:2604.23374](https://arxiv.org/abs/2604.23374)
+4. Z. Chen et al. *AgentPoison: Red-teaming LLM Agents via Poisoning Memory or Knowledge Bases*. 2024. [arXiv:2407.12784](https://arxiv.org/abs/2407.12784)
+5. E. Debenedetti et al. *AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses for LLM Agents*. 2024. [arXiv:2406.13352](https://arxiv.org/abs/2406.13352)
+6. Meta. *Agents Rule of Two: A Practical Approach to AI Agent Security*. 31 October 2025. [ai.meta.com/blog/practical-ai-agent-security](https://ai.meta.com/blog/practical-ai-agent-security/)
+7. S. Willison. *The lethal trifecta for AI agents: private data, untrusted content, and external communication*. 16 June 2025. [simonwillison.net](https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/)
 
 ## Acknowledgements
 
