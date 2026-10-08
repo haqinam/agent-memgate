@@ -1,0 +1,18 @@
+# One row per model to evaluate. Rows whose provider has no credentials in the
+# environment are skipped (mock always runs). List a provider more than once to
+# compare several of its models. `${VAR}` is expanded from the environment.
+#
+#   anthropic   ANTHROPIC_API_KEY
+#   openai      OPENAI_API_KEY        (OPENAI_BASE_URL optional)
+#   gemini      GEMINI_API_KEY
+#   openweights OPENWEIGHTS_BASE_URL  (any OpenAI-compatible server, e.g. Ollama: http://localhost:11434/v1)
+models:
+  - provider: mock
+  - provider: anthropic
+    model: claude-sonnet-5-5
+  - provider: openai
+    model: gpt-5.5            # unverified default; check OpenAI's model list
+  - provider: gemini
+    model: gemini-3.6-flash   # unverified default; check Google's model list
+  - provider: openweights
+    model: ${OPENWEIGHTS_MODEL}

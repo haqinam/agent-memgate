@@ -61,3 +61,26 @@ class OpenAIProvider:
         return AssistantMessage(msg.content or (f"[refusal] {refusal}" if refusal else ""), calls,
                                 raw=msg.model_dump(mode="json", exclude_none=True),
                                 stop_reason="refusal" if refusal else choice.finish_reason)
+
+
+class OpenWeightsProvider(OpenAIProvider):
+    """Open-weights model behind any OpenAI-compatible server (Ollama, vLLM, llama.cpp, LM Studio).
+
+    OPENWEIGHTS_BASE_URL  e.g. http://localhost:11434/v1   (required)
+    OPENWEIGHTS_MODEL     e.g. the server's model tag      (or pass --model / set it in eval/models.yaml)
+    OPENWEIGHTS_API_KEY   optional; most local servers ignore it
+    """
+
+    name = "openweights"
+
+    def __init__(self, model: str | None = None) -> None:
+        import os
+
+        import openai
+
+        model = model or os.environ.get("OPENWEIGHTS_MODEL")
+        if not model:
+            raise SystemExit("openweights: set OPENWEIGHTS_MODEL or pass a model id")
+        self.client = openai.OpenAI(base_url=os.environ["OPENWEIGHTS_BASE_URL"],
+                                    api_key=os.environ.get("OPENWEIGHTS_API_KEY", "not-needed"))
+        self.model = model
