@@ -63,8 +63,8 @@ def make_printer(scenario: dict, defense: bool):
             mem = ev["memory"]
             if "<untrusted_memory>" in mem:
                 q = mem.count("\n- [mem-")
-                console.print(f"  [grey62]memory injected:[/] trusted notes + [yellow]{q} quarantined note(s) "
-                              f"inside <untrusted_memory> (data only)[/]")
+                console.print(f"  [grey62]memory injected:[/] trusted notes + [yellow]{q} quarantined "
+                              f"note{'s' if q != 1 else ''} inside <untrusted_memory> (data only)[/]")
             elif _has(mem, idents):
                 console.print("  [grey62]memory injected (as standing instructions):[/]")
                 for ln in mem.splitlines()[1:]:
@@ -122,10 +122,10 @@ def make_printer(scenario: dict, defense: bool):
                     console.print(Panel(body, title="📤 OUTGOING EMAIL SENT", border_style="red" if any(
                         _has(a.get(k, ""), idents) for k in ("to", "cc", "bcc")) else "green", padding=(0, 2)))
                 else:
-                    reason = Text("\n")
+                    reason = Text("\n\n")
                     reason.append(f"decision: {ev['decision']}", style="bold")
                     if ev["confirmed"] is False:
-                        reason.append("  (no user present to confirm → declined)", style="grey62")
+                        reason.append("  (no user present to confirm, so declined)", style="grey62")
                     reason.append(f"\nreason:   {ev['reason']}")
                     console.print(Panel(body + reason, title="🛡  STOPPED AT TOOL BOUNDARY",
                                         subtitle="memgate flow policy", border_style="green", padding=(0, 2)))
@@ -162,7 +162,7 @@ def main(argv: list[str] | None = None) -> int:
         f"[bold]Agent memory poisoning[/]  ·  scenario [cyan]{scenario['name']}[/]\n"
         f"model: {model}\ndefense (memgate): {label}",
         border_style="cyan", padding=(0, 2)))
-    if audit.key_generated:
+    if audit.key_generated and args.audit_log:
         console.print(f"[grey50]audit HMAC key for this run (set MEMGATE_AUDIT_KEY to fix it): "
                       f"{audit.key.decode()}[/]")
 
@@ -182,8 +182,9 @@ def main(argv: list[str] | None = None) -> int:
                       "yes" if e["quarantined"] else "no", e["text"][:60] + ("…" if len(e["text"]) > 60 else ""))
         console.print(t)
         src = agent.store.quarantined()[0].label.source
+        n = sum(1 for e in agent.store.entries if e.label.source == src)
         console.print(f"[grey62]rollback available: store.rollback(source={src!r}) removes "
-                      f"{sum(1 for e in agent.store.entries if e.label.source == src)} entr(ies)[/]")
+                      f"{n} {'entry' if n == 1 else 'entries'}[/]")
     for err in res["errors"]:
         console.print(f"[red]provider error:[/] {err}")
 
