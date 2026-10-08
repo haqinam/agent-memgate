@@ -10,6 +10,8 @@ uv run python demo/run_demo.py --provider mock --defense off   # → RESULT: EXF
 uv run python demo/run_demo.py --provider mock --defense on    # → RESULT: BLOCKED
 ```
 
+To render the screencast as an MP4 (macOS fonts): `uv run --with pillow --with imageio-ffmpeg --with numpy python scripts/make_video.py`.
+
 No API key needed: `mock` is a scripted model that goes through the same agent loop and tool boundary as real models. It proves the plumbing. Real models are what prove the vulnerability (see Results).
 
 ## Results
