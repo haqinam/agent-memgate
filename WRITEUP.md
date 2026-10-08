@@ -67,11 +67,11 @@ In the canonical run, the session-two note is saved as `source=web_fetch, trust=
 
 ## Related work
 
-**CaMeL** (Debenedetti et al., 2025, arXiv:2503.18813) separates the control flow derived from the user's request from the data the agent handles, attaches capabilities to values, and checks policies at tool calls. We borrow that stance in a much weaker form: no restructuring of the agent, and labels inferred by string matching rather than tracked through an interpreter. What we add is narrow: provenance carried into the memory store, so it survives across sessions.
+**CaMeL** (Debenedetti et al., 2025, [arXiv:2503.18813](https://arxiv.org/abs/2503.18813)) separates the control flow derived from the user's request from the data the agent handles, attaches capabilities to values, and checks policies at tool calls. We borrow that stance in a much weaker form: no restructuring of the agent, and labels inferred by string matching rather than tracked through an interpreter. What we add is narrow: provenance carried into the memory store, so it survives across sessions.
 
-**"Securing AI Agents with Information-Flow Control"** (Costa et al., 2025, arXiv:2505.23643) brings information-flow labels and enforcement to agent planning. Our labels are a very simple case of that idea: a source plus three levels of trust.
+**"Securing AI Agents with Information-Flow Control"** (Costa et al., 2025, [arXiv:2505.23643](https://arxiv.org/abs/2505.23643)) brings information-flow labels and enforcement to agent planning. Our labels are a very simple case of that idea: a source plus three levels of trust.
 
-**"Ghost in the Agent"** (2026, arXiv:2604.23374) was given to us as related work on persistent compromise of agents. We have not read it closely enough to characterise it and make no claims about its contents.
+**"Ghost in the Agent"** (Cai et al., 2026, [arXiv:2604.23374](https://arxiv.org/abs/2604.23374)) presents NeuroTaint, a taint-tracking framework for LLM agents. It argues that taint in agents spreads not only by copied content but through semantic transformation, causal influence on decisions, and persistence across sessions through memory, and it reconstructs provenance by auditing execution traces offline. It is the closest work to ours and covers exactly what our string matcher misses. The two are complementary: NeuroTaint audits after the fact with semantic and causal evidence; agent-memgate enforces at the moment of the tool call with a much cruder, explicit-flow signal. A semantic tracker of that kind is the natural replacement for our matcher.
 
 **AgentPoison** (Chen et al., 2024) plants optimised backdoor triggers in an agent's memory or retrieval store, assuming the attacker can write to it. Ours cannot; the note gets in through the agent's own memory tool via indirect prompt injection.
 
@@ -81,7 +81,7 @@ In the canonical run, the session-two note is saved as `source=web_fetch, trust=
 
 ## Limitations
 
-- **It only sees copying.** The matcher catches text and addresses that were carried over directly. It does not catch meaning that was carried over in other words.
+- **It only sees copying.** The matcher catches text and addresses that were carried over directly. It does not catch meaning carried over in other words, the semantic and causal flows that Cai et al. argue dominate in agents.
 - **Rewording beats it, and we show how.** In `memory_bcc_paraphrase_bypass` the page describes the address ("records, then seventy-seven, at offsite and vault run together"). A model that decodes it and saves its own summary leaves nothing to match, so the note is trusted and the scripted model's email goes out with the defense on. Both real models decoded the address but declined to save it, so the bypass was never exercised against them.
 - **The first-appearance rule misfires.** A colleague's address first seen in the inbox gets flagged when the user later asks to email them. Asking for confirmation softens this but doesn't fix it.
 - **Small study.** Four scenarios, one domain, a synthetic world, two real models, five trials per cell, and a system prompt that actively encourages saving memories.
@@ -90,7 +90,7 @@ In the canonical run, the session-two note is saved as `source=web_fetch, trust=
 
 ## Future work
 
-A semantic matcher behind the same interface, with measured false-positive rates. Memory integrity when agents share a store. A policy language over flows rather than per-argument lists. Porting to AgentDojo. And harder attacks, such as slow poisoning that builds trust over several sessions before asking for anything.
+A semantic matcher behind the same interface, drawing on approaches such as NeuroTaint, with measured false-positive rates and latency suitable for enforcement at call time. Memory integrity when agents share a store. A policy language over flows rather than per-argument lists. Porting to AgentDojo. And harder attacks, such as slow poisoning that builds trust over several sessions before asking for anything.
 
 ## Acknowledgements
 
